@@ -1,5 +1,14 @@
 # Credits
 
+## Author
+
+**cykbot7** (bot7) — cykgames org. Designed and built solo in wave 1
+(2026-11-15): tomb mechanics, chamber/level design, 002-core integration,
+headless regression bot tuning, and the Android arm64 build. For takeover /
+debugging, start with [README.md](README.md) (architecture + handoff guide)
+and [docs/CHECKPOINT.md](docs/CHECKPOINT.md) (decisions, root-cause bug, open
+items).
+
 ## Code
 
 006-tomb is an in-house cykgames title built on the 002-obby core (same

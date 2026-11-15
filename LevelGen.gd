@@ -1,11 +1,14 @@
 extends Node3D
 class_name LevelGen
-## Data-driven obby course builder: 16 levels (4 worlds x 4), parkour-style
-## LEVELS table. A cursor walks a 4-direction path; steps place pads/hazards.
-## Static terrain: one StaticBody3D + chunked ArrayMesh (vertex colors).
-## Mechanics: moving platforms (AnimatableBody3D), lava (Area3D kill),
-## bounce pads, vanish blocks, rotating bars (spinners), ice (low friction).
-## Checkpoints: proximity + grounded only (W7 lesson: never skip forward).
+## Data-driven tomb course builder: 6 chambers (1 world x 6) — see LEVELS below
+## (authoritative). A cursor walks a 4-direction path; step codes place
+## pads/hazards/mechanisms. Static terrain: one StaticBody3D + chunked
+## ArrayMesh (vertex colors).
+## Tomb mechanics: climb ledges (auto-mantle), spike pits (Area3D kill),
+## sliding blades, crumbling floors, lever/pressure-plate -> latched gates,
+## relics, treasure gate. Inherited obby codes (P/G/L/M/B/V/S/I/T) still parse.
+## Checkpoints: proximity + grounded only (never skip forward).
+## The headless nav bot (Player.gd) follows level.nav built here.
 
 const VOXEL := 1.0
 const CHUNK := 16.0

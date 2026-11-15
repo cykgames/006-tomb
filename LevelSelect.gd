@@ -102,6 +102,13 @@ func _build_ui() -> void:
 			b.pressed.connect(_on_level_pressed.bind(idx))
 			row.add_child(b)
 
+	# Author / attribution footer on the title screen. The headless regression
+	# bot skips this scene (goes straight to Main.tscn), so this never affects
+	# automated tests. Keep the author tag in sync with README.md / CREDITS.md.
+	var credit := _mk_label("by cykbot7 · cykgames · Godot 4.7.2 · MIT", 20, Color(0.55, 0.60, 0.70))
+	credit.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(credit)
+
 
 func _on_level_pressed(idx: int) -> void:
 	Game.level_index = idx

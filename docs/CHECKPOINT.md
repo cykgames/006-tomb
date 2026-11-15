@@ -1,7 +1,14 @@
 # 006-tomb — DEV CHECKPOINT (2026-11-15)
 
-Status: **playable MVP**, headless regression green, APK built. NOT pushed,
-NOT on-device tested yet. Built solo by cykbot7 on user "go" (wave 1).
+Status: **playable MVP**, headless regression green, APK built + on-device
+boot/render/touch verified (Android arm64 test phone). NOT pushed (awaiting
+consent). Built solo by **cykbot7** on user "go" (wave 1).
+
+Attribution / handoff pass (2026-11-15): author tag `cykbot7` added to the
+in-game title screen (LevelSelect.gd), README.md, and CREDITS.md. README.md is
+now the takeover / debugging guide (design sources, architecture/file map,
+step codes, build/test, known issues). LevelGen.gd header docstring corrected
+(was stale "16 levels" inherited from 002; LEVELS table = 6 tomb chambers).
 
 ## What was built
 
@@ -75,7 +82,8 @@ a waypoint before the checkpoint).
 
 ## Open items / next verification
 
-- On-device playtest pending (A54). Headless proves logic, not touch feel.
+- On-device boot/render/touch verified; extended human feel-test pending.
+  Headless proves logic, not touch feel.
 - Treasure gate BLOCK path (relics<3) not headless-tested (bot always has 3);
   logic is a simple count check + toast, verify on device.
 - Debug-signed (no release keystore, same as 001/002).
