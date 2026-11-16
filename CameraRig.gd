@@ -8,8 +8,8 @@ var trauma := 0.0
 var _look := Vector3.ZERO
 var _initialized := false
 
-const OFFSET := Vector3(6.5, 9.0, 6.5)
-const LOOK_AHEAD := Vector3(0, 0.8, 0)
+const OFFSET := Vector3(2.4, 8.0, 1.3)
+const LOOK_AHEAD := Vector3(0, 0.5, -1.03)
 const FOLLOW_K := 5.0
 
 

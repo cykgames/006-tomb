@@ -27,7 +27,7 @@ shape = SubResource("cap")
 
 [node name="CameraRig" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 10.5, 3.5)
-fov = 60.0
+fov = 52.0
 script = ExtResource("4")
 
 [node name="Audio" type="Node" parent="."]
