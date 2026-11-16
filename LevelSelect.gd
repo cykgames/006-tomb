@@ -40,29 +40,52 @@ func _build_ui() -> void:
 	margin.add_theme_constant_override("margin_top", 40)
 	margin.add_theme_constant_override("margin_bottom", 40)
 	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.add_child(margin)
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 26)
+	vbox.add_theme_constant_override("separation", 36)
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# Center the whole menu vertically so portrait screens do not leave a
+	# huge dead zone under the content.
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	margin.add_child(vbox)
 
-	var title := _mk_label("TOMB EXPLORER", 72)
+	# Prominent title panel (the menu is the root scene, so this header is
+	# the landmark element instead of a back button).
+	var header := PanelContainer.new()
+	var hsb := StyleBoxFlat.new()
+	hsb.bg_color = Color(0.10, 0.08, 0.05, 0.95)
+	hsb.border_color = WORLD_COLORS[0]
+	hsb.set_border_width_all(4)
+	hsb.set_corner_radius_all(18)
+	hsb.set_content_margin_all(24)
+	header.add_theme_stylebox_override("panel", hsb)
+	vbox.add_child(header)
+	var hv := VBoxContainer.new()
+	hv.add_theme_constant_override("separation", 10)
+	header.add_child(hv)
+	var title := _mk_label("TOMB EXPLORER", 88, Color(1.0, 0.85, 0.2))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
-	var sub := _mk_label("%d CHAMBERS · STARS %d/%d · RELICS %d/%d" % [Game.LEVEL_COUNT, Game.total_stars(), Game.LEVEL_COUNT * 3, Game.relic_count(), Game.RELICS_NEEDED], 30, Color(1.0, 0.85, 0.2))
+	hv.add_child(title)
+	var sub := _mk_label("%d CHAMBERS · STARS %d/%d · RELICS %d/%d" % [Game.LEVEL_COUNT, Game.total_stars(), Game.LEVEL_COUNT * 3, Game.relic_count(), Game.RELICS_NEEDED], 32, Color(1.0, 0.85, 0.2))
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(sub)
-	var hint := _mk_label("CLIMB LEDGES · DODGE TRAPS · PULL LEVERS · FIND 3 RELICS", 22, Color(0.7, 0.75, 0.85))
+	hv.add_child(sub)
+	var hint := _mk_label("CLIMB LEDGES · DODGE TRAPS · PULL LEVERS · FIND 3 RELICS", 24, Color(0.7, 0.75, 0.85))
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(hint)
 
 	for w in range(Game.WORLD_COUNT):
-		var wl := _mk_label("DEPTH %d · %s" % [w + 1, WORLD_NAMES[w]], 36, WORLD_COLORS[w])
+		var wl := _mk_label("DEPTH %d · %s" % [w + 1, WORLD_NAMES[w]], 42, WORLD_COLORS[w])
 		vbox.add_child(wl)
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 20)
-		row.alignment = BoxContainer.ALIGNMENT_CENTER
-		vbox.add_child(row)
+		# 2-column grid wraps all 6 chambers inside the portrait width; the
+		# old single HBox row overflowed and clipped chambers 1-5 / 1-6.
+		var grid := GridContainer.new()
+		grid.columns = 2
+		grid.add_theme_constant_override("h_separation", 28)
+		grid.add_theme_constant_override("v_separation", 28)
+		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		vbox.add_child(grid)
 		for i in range(Game.PER_WORLD):
 			var idx := w * Game.PER_WORLD + i
 			var unlocked := Game.is_unlocked(idx)
@@ -74,8 +97,10 @@ func _build_ui() -> void:
 				b.text = "%d-%d\n%s\n%s" % [w + 1, i + 1, lname, star_text]
 			else:
 				b.text = "%d-%d\nLOCKED" % [w + 1, i + 1]
-			b.add_theme_font_size_override("font_size", 26)
-			b.custom_minimum_size = Vector2(260, 150)
+			b.add_theme_font_size_override("font_size", 34)
+			b.custom_minimum_size = Vector2(400, 300)
+			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			b.size_flags_vertical = Control.SIZE_EXPAND_FILL
 			b.disabled = not unlocked
 			var sb := StyleBoxFlat.new()
 			if unlocked:
@@ -100,7 +125,7 @@ func _build_ui() -> void:
 			b.add_theme_color_override("font_color", Color(1, 1, 1) if unlocked else Color(0.45, 0.47, 0.52))
 			b.add_theme_color_override("font_disabled_color", Color(0.45, 0.47, 0.52))
 			b.pressed.connect(_on_level_pressed.bind(idx))
-			row.add_child(b)
+			grid.add_child(b)
 
 	# Author / attribution footer on the title screen. The headless regression
 	# bot skips this scene (goes straight to Main.tscn), so this never affects

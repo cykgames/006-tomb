@@ -54,7 +54,7 @@ const THEMES := [
 ## Start pad (6x6) and goal pad (6x6) are added automatically.
 const LEVELS := [
 	{"name": "ENTRANCE", "world": 0, "par": 45.0, "steps": [
-		["G", 2.5], ["P", 4, 8], ["C", 3.5], ["P", 4, 12], ["K", 3.0], ["P", 4, 8]]},
+		["G", 1.5], ["P", 6, 8], ["C", 3.5], ["P", 4, 12], ["K", 3.0], ["P", 4, 8]]},
 	{"name": "BLADE HALL", "world": 0, "par": 55.0, "steps": [
 		["G", 2.5], ["P", 4, 6], ["X", 6], ["G", 3.0], ["P", 4, 6],
 		["F", 3], ["P", 4, 8], ["X", 6], ["G", 2.5], ["P", 4, 8]]},
@@ -94,6 +94,9 @@ var _dir := 0
 var _min_top := 0.0
 var _boxes: Array = []
 var _terrain_body: StaticBody3D
+var _last_pad_w := 6.0            # width of the last placed pad (stripe sizing)
+var _pending_landing := false     # gap landing edge awaiting its pad top height
+var torch_lights: Array = []      # tomb torch OmniLights (flicker in _physics_process)
 
 signal finished(final_time: float)
 signal coin_taken(pos: Vector3)
@@ -115,10 +118,14 @@ func _ready() -> void:
 
 
 func _do_step(s: Array) -> void:
-	match String(s[0]):
+	var code := String(s[0])
+	# A gap landing stripe only makes sense on the pad that follows the gap.
+	if code != "P" and code != "I":
+		_pending_landing = false
+	match code:
 		"P": _pad(float(s[1]), float(s[2]), float(s[3]) if s.size() > 3 else 0.0, "normal")
 		"I": _pad(float(s[1]), float(s[2]), 0.0, "ice")
-		"G": _cursor += DIRS[_dir] * float(s[1])
+		"G": _gap(float(s[1]))
 		"L": _lava(float(s[1]))
 		"M": _mover(float(s[1]))
 		"B": _pad(3, 3, 0, "bounce")
@@ -135,10 +142,54 @@ func _do_step(s: Array) -> void:
 		"R": _relic(String(s[1]))
 
 
+## Gap: advance the cursor and telegraph the takeoff edge with hazard
+## stripes. The landing edge is striped when the next pad is placed (its
+## top height is not known yet). Visual only -- no collision added.
+func _gap(d: float) -> void:
+	var dir := DIRS[_dir]
+	var right := DIRS[(_dir + 1) % 4]
+	_edge_stripes(_cursor - dir * 0.3 + Vector3(0, 0.05, 0), dir, right, _last_pad_w)
+	_pending_landing = true
+	_cursor += dir * d
+
+
+## High-contrast yellow/black hazard stripes lying flat on a pad edge so the
+## player can read exactly where the floor ends (gap telegraph). Alternating
+## segments, slightly emissive yellow, no collision and no shadow casting.
+func _edge_stripes(center: Vector3, dir: Vector3, right: Vector3, w: float) -> void:
+	var n := maxi(2, int(round(w / 0.5)))
+	var seg := w / float(n)
+	var yellow := StandardMaterial3D.new()
+	yellow.albedo_color = Color(1.0, 0.85, 0.1)
+	yellow.emission_enabled = true
+	yellow.emission = Color(0.9, 0.7, 0.05)
+	yellow.emission_energy_multiplier = 0.7
+	yellow.roughness = 0.6
+	var black := StandardMaterial3D.new()
+	black.albedo_color = Color(0.06, 0.06, 0.06)
+	black.roughness = 0.9
+	for i in range(n):
+		var off := (float(i) - (float(n) - 1.0) / 2.0) * seg
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(
+			absf(right.x) * seg + absf(dir.x) * 0.6, 0.08,
+			absf(right.z) * seg + absf(dir.z) * 0.6)
+		mi.mesh = bm
+		mi.position = center + right * off
+		mi.material_override = yellow if i % 2 == 0 else black
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
+
+
 func _pad(w: float, l: float, dy: float, kind: String) -> void:
 	var dir := DIRS[_dir]
 	var right := DIRS[(_dir + 1) % 4]
 	var top := _cursor.y + dy
+	_last_pad_w = w
+	if _pending_landing:
+		_edge_stripes(_cursor + dir * 0.3 + Vector3(0, dy + 0.05, 0), dir, right, w)
+		_pending_landing = false
 	var center := Vector3(_cursor.x, top - THICK / 2.0, _cursor.z) + dir * (l / 2.0)
 	var size := Vector3(
 		absf(right.x) * w + absf(dir.x) * l, THICK,
@@ -894,6 +945,7 @@ func _build_finish_gate(pad_top_center: Vector3) -> void:
 func _build_decorations() -> void:
 	if theme["name"] == "TOMB":
 		_build_torches()
+		_build_tomb_chamber()
 		return
 	var cloud_scene: PackedScene = null
 	var grass_scene: PackedScene = null
@@ -945,6 +997,72 @@ func _build_torches() -> void:
 		fmat.emission_energy_multiplier = 2.0
 		flame.material_override = fmat
 		add_child(flame)
+		# Real warm point light so torches pool light on the stone instead
+		# of being a glowing cube only. Shadows off (mobile perf budget).
+		var glow := OmniLight3D.new()
+		glow.position = flame.position + Vector3(0, 0.3, 0)
+		glow.light_color = Color(1.0, 0.62, 0.28)
+		glow.light_energy = 2.6
+		glow.omni_range = 8.0
+		glow.shadow_enabled = false
+		add_child(glow)
+		torch_lights.append(glow)
+
+
+## Tomb chamber shell: pit floor far below the course, side/end walls,
+## columns flanking the path and ceiling beams overhead. Everything is
+## visual only (no collision) and kept outside the camera corridor, so the
+## proven voxel path, jump feel and camera framing stay untouched.
+func _build_tomb_chamber() -> void:
+	var z_min := 0.0
+	var z_max := 0.0
+	var top_max := 0.0
+	for n in nav:
+		var p: Vector3 = n["pos"]
+		z_min = minf(z_min, p.z)
+		z_max = maxf(z_max, p.z)
+		top_max = maxf(top_max, p.y)
+	var floor_y := _min_top - 13.5   # below kill_y: falls respawn before landing
+	var ceil_y := top_max + 14.0     # above the highest camera position
+	var len_z := z_max - z_min + 26.0
+	var mid_z := (z_max + z_min) / 2.0
+	var wall_h := ceil_y - floor_y
+	var wall_cy := floor_y + wall_h / 2.0
+	var stone := StandardMaterial3D.new()
+	stone.albedo_color = Color(0.32, 0.26, 0.18)
+	stone.roughness = 1.0
+	var dark := StandardMaterial3D.new()
+	dark.albedo_color = Color(0.15, 0.12, 0.09)
+	dark.roughness = 1.0
+	# Pit floor + ceiling slab.
+	_shell_box(Vector3(0, floor_y - 0.5, mid_z), Vector3(24, 1, len_z), dark)
+	_shell_box(Vector3(0, ceil_y + 0.5, mid_z), Vector3(24, 1, len_z), dark)
+	# Side walls (outside the camera's +/-6.5 x offset) and end walls.
+	_shell_box(Vector3(-9.5, wall_cy, mid_z), Vector3(1, wall_h, len_z), stone)
+	_shell_box(Vector3(9.5, wall_cy, mid_z), Vector3(1, wall_h, len_z), stone)
+	_shell_box(Vector3(0, wall_cy, z_max + 12.0), Vector3(20, wall_h, 1), stone)
+	_shell_box(Vector3(0, wall_cy, z_min - 12.0), Vector3(20, wall_h, 1), stone)
+	# Column pairs + capitals + cross beams at every other waypoint. x=+/-3.9
+	# clears the widest pad (6/2=3) and the camera corridor (min x ~4.5).
+	for i in range(nav.size()):
+		if i % 2 != 0:
+			continue
+		var p: Vector3 = nav[i]["pos"]
+		for sx in [-3.9, 3.9]:
+			_shell_box(Vector3(sx, wall_cy, p.z), Vector3(0.9, wall_h, 0.9), stone)
+			_shell_box(Vector3(sx, ceil_y - 0.4, p.z), Vector3(1.4, 0.8, 1.4), stone)
+		_shell_box(Vector3(0, ceil_y - 0.4, p.z), Vector3(8.7, 0.7, 0.9), stone)
+
+
+func _shell_box(pos: Vector3, size: Vector3, mat: StandardMaterial3D) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = size
+	mi.mesh = bm
+	mi.position = pos
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
 
 
 func _build_light() -> void:
@@ -978,6 +1096,9 @@ func _build_light() -> void:
 
 func _physics_process(delta: float) -> void:
 	time += delta
+	# Torch flicker (tomb only; the array is empty in other themes).
+	for i in range(torch_lights.size()):
+		torch_lights[i].light_energy = 2.6 + 0.5 * sin(time * 9.0 + float(i) * 1.7) + 0.2 * sin(time * 23.0 + float(i) * 3.1)
 	for m in movers:
 		var off: float = m["amp"] * sin(TAU * time / m["period"] + m["phase"])
 		m["body"].position = m["center"] + m["axis"] * off + Vector3(0, -THICK / 2.0, 0)

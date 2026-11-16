@@ -33,6 +33,7 @@ var _pause_button: Button
 var _pause_panel: ColorRect
 var _flash: ColorRect
 var _joy: Joystick
+var _start_banner: PanelContainer
 
 @onready var player: CharacterBody3D = get_parent().get_node("Player")
 
@@ -40,11 +41,13 @@ var _joy: Joystick
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_ui()
-	msg_label_set("TAP TO START")
-	_center_button.text = "START"
-	_center_button.visible = true
 	if DisplayServer.get_name() == "headless":
 		start_run()
+	else:
+		# Single entry gate: tapping a level in the select screen loads this
+		# scene and the run auto-starts after a short non-blocking banner.
+		# Stick/jump input starts it even earlier (see _on_stick_pressed).
+		get_tree().create_timer(1.5).timeout.connect(start_run)
 
 
 func _mk_label(text: String, size: int) -> Label:
@@ -156,6 +159,8 @@ func _build_ui() -> void:
 	_center_button = _mk_button("START", 60)
 	_centered(_center_button, 56, 196, 380)
 	_center_button.pressed.connect(_on_center_pressed)
+	# Hidden until the finish panel reuses it (NEXT LEVEL / LEVEL SELECT).
+	_center_button.visible = false
 	add_child(_center_button)
 	_restart_button = _mk_button("RESTART", 46)
 	_centered(_restart_button, 216, 336, 185)
@@ -225,6 +230,29 @@ func _build_ui() -> void:
 	var plevels := _mk_button("LEVELS", 36)
 	plevels.pressed.connect(_on_exit_pressed)
 	pv.add_child(plevels)
+
+	# Start banner: bottom strip above the touch controls, never covers the
+	# character (screen center). Input passes through; the run auto-starts
+	# 1.5s after load, or immediately on stick/jump input.
+	_start_banner = PanelContainer.new()
+	var bsb := StyleBoxFlat.new()
+	bsb.bg_color = Color(0.05, 0.08, 0.14, 0.85)
+	bsb.border_color = Color(1.0, 0.85, 0.2, 0.9)
+	bsb.set_border_width_all(3)
+	bsb.set_corner_radius_all(16)
+	bsb.set_content_margin_all(16)
+	_start_banner.add_theme_stylebox_override("panel", bsb)
+	_start_banner.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_start_banner.offset_left = 60.0
+	_start_banner.offset_right = -60.0
+	_start_banner.offset_top = -640.0
+	_start_banner.offset_bottom = -520.0
+	_start_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bl := _mk_label("GET READY!  STICK: MOVE · J: JUMP", 34)
+	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_start_banner.add_child(bl)
+	add_child(_start_banner)
 
 
 func msg_label_set(text: String) -> void:
@@ -316,6 +344,8 @@ func start_run() -> void:
 	player.started = true
 	_msg_label.visible = false
 	_center_button.visible = false
+	_start_banner.visible = false
+	toast("GO!")
 	run_started.emit()
 
 
