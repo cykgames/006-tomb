@@ -6,7 +6,7 @@ config_version=5
 
 [application]
 
-config/name="TombExplorer"
+config/name="006 Tomb Explorer"
 config/description="Tomb Raider-style blocky 3D action-adventure: climb ledges, dodge traps, pull levers, collect relics, reach the treasure."
 run/main_scene="res://LevelSelect.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
