@@ -1,6 +1,6 @@
 extends Node3D
 class_name LevelGen
-## Data-driven tomb course builder: 6 chambers (1 world x 6) — see LEVELS below
+## Data-driven tomb course builder: 6 chambers rotating 4 themes — see LEVELS
 ## (authoritative). A cursor walks a 4-direction path; step codes place
 ## pads/hazards/mechanisms. Static terrain: one StaticBody3D + chunked
 ## ArrayMesh (vertex colors).
@@ -55,19 +55,19 @@ const THEMES := [
 const LEVELS := [
 	{"name": "ENTRANCE", "world": 0, "par": 45.0, "steps": [
 		["G", 1.5], ["P", 6, 8], ["C", 3.5], ["P", 4, 12], ["K", 3.0], ["P", 4, 8]]},
-	{"name": "BLADE HALL", "world": 0, "par": 55.0, "steps": [
+	{"name": "BLADE HALL", "world": 1, "par": 55.0, "steps": [
 		["G", 2.5], ["P", 4, 6], ["X", 6], ["G", 3.0], ["P", 4, 6],
 		["F", 3], ["P", 4, 8], ["X", 6], ["G", 2.5], ["P", 4, 8]]},
-	{"name": "LEVER GATE", "world": 0, "par": 55.0, "steps": [
+	{"name": "LEVER GATE", "world": 2, "par": 55.0, "steps": [
 		["G", 2.5], ["P", 4, 6], ["W", 0], ["G", 2.5], ["P", 4, 4],
 		["D", 0, 6], ["G", 2.5], ["P", 4, 8], ["R", "relic1"], ["G", 3.0], ["P", 4, 8]]},
-	{"name": "PRESSURE PATH", "world": 0, "par": 60.0, "steps": [
+	{"name": "PRESSURE PATH", "world": 3, "par": 60.0, "steps": [
 		["G", 2.5], ["P", 4, 6], ["A", 1], ["K", 3.0], ["P", 4, 6],
 		["D", 1, 6], ["G", 2.5], ["P", 4, 8], ["R", "relic2"], ["G", 3.0], ["P", 4, 8]]},
-	{"name": "CRUMBLE DEPTHS", "world": 0, "par": 65.0, "steps": [
+	{"name": "CRUMBLE DEPTHS", "world": 2, "par": 65.0, "steps": [
 		["G", 2.5], ["P", 4, 6], ["F", 3], ["X", 6], ["P", 4, 6],
 		["R", "relic3"], ["G", 3.0], ["P", 4, 6], ["C", 3.5], ["P", 4, 8]]},
-	{"name": "TREASURE SANCTUM", "world": 0, "par": 70.0, "treasure": true, "steps": [
+	{"name": "TREASURE SANCTUM", "world": 3, "par": 70.0, "treasure": true, "steps": [
 		["G", 2.5], ["P", 4, 6], ["C", 3.5], ["W", 2], ["G", 2.5], ["P", 4, 4],
 		["D", 2, 6], ["G", 2.5], ["P", 4, 10]]},
 ]

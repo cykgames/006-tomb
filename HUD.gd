@@ -124,10 +124,43 @@ func _build_ui() -> void:
 	bar.add_child(_coin_label)
 	bar.add_child(_relic_label)
 	bar.add_child(_fall_label)
-	_pause_button = _mk_button("II", 30)
-	_pause_button.custom_minimum_size = Vector2(76, 56)
+	# Pause: visible chip stays small, but the real touch target is an
+	# invisible 166x166 button in the top-right corner (>=120 device px at
+	# the 0.84375 portrait scale = ~50dp). Backported from 001-parkour HUD;
+	# the old 76x56 bar button measured only ~23x17dp (fun-review H3).
+	_pause_button = Button.new()
+	_pause_button.focus_mode = Control.FOCUS_NONE
+	for sn in ["normal", "hover", "pressed", "focus", "disabled"]:
+		_pause_button.add_theme_stylebox_override(sn, StyleBoxEmpty.new())
+	_pause_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_pause_button.offset_left = -166.0
+	_pause_button.offset_top = 0.0
+	_pause_button.offset_right = 0.0
+	_pause_button.offset_bottom = 166.0
 	_pause_button.pressed.connect(toggle_pause)
-	bar.add_child(_pause_button)
+	add_child(_pause_button)
+	var pause_face := Panel.new()
+	pause_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var pfs := StyleBoxFlat.new()
+	pfs.bg_color = Color(0.07, 0.10, 0.16, 0.82)
+	pfs.border_color = Color(0.85, 0.92, 1.0, 0.5)
+	pfs.set_border_width_all(3)
+	pfs.set_corner_radius_all(20)
+	pause_face.add_theme_stylebox_override("panel", pfs)
+	pause_face.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	pause_face.offset_left = -94.0
+	pause_face.offset_top = 6.0
+	pause_face.offset_right = -18.0
+	pause_face.offset_bottom = 62.0
+	_pause_button.add_child(pause_face)
+	var pause_glyph := _mk_label("II", 30)
+	pause_glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pause_glyph.set_anchors_preset(Control.PRESET_FULL_RECT)
+	pause_glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pause_glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	pause_face.add_child(pause_glyph)
+	_pause_button.button_down.connect(func() -> void: pause_face.modulate = Color(0.55, 0.85, 1.7))
+	_pause_button.button_up.connect(func() -> void: pause_face.modulate = Color.WHITE)
 
 	# Anchored joystick (bottom-left): full Vector2, both axes consumed by
 	# the obby player. Disc stays near home; finger tracked anywhere.
