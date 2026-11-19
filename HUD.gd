@@ -30,6 +30,10 @@ var _restart_button: Button
 var _exit_button: Button
 var _jump_button: Button
 var _pause_button: Button
+var _cam_button: Button
+var _cam_glyph: Label
+
+const CAM_MODE_NAMES := ["TOP", "6H", "5H", "7H"]
 var _pause_panel: ColorRect
 var _flash: ColorRect
 var _joy: Joystick
@@ -97,6 +101,15 @@ func _centered(ctrl: Control, top: float, bottom: float, half_w: float = 320.0) 
 	ctrl.offset_bottom = bottom
 
 
+## Camera view cycle button: TOP -> 6H -> 5H -> 7H (see CameraRig.view_mode).
+func _on_cam_pressed() -> void:
+	var rig := get_parent().get_node_or_null("CameraRig")
+	if rig == null:
+		return
+	rig.cycle_view()
+	_cam_glyph.text = CAM_MODE_NAMES[rig.view_mode]
+
+
 func _build_ui() -> void:
 	var topbg := ColorRect.new()
 	topbg.color = Color(0, 0, 0, 0.35)
@@ -161,6 +174,47 @@ func _build_ui() -> void:
 	pause_face.add_child(pause_glyph)
 	_pause_button.button_down.connect(func() -> void: pause_face.modulate = Color(0.55, 0.85, 1.7))
 	_pause_button.button_up.connect(func() -> void: pause_face.modulate = Color.WHITE)
+
+	# Camera view cycle (user 2026-11-19): TOP -> 6H -> 5H -> 7H low chase
+	# cams (30deg pitch at the player's 6/5/7 o'clock). Same invisible
+	# 166x166 hit pattern as pause, stacked directly below it so the two
+	# touch rects never overlap.
+	_cam_button = Button.new()
+	_cam_button.focus_mode = Control.FOCUS_NONE
+	for sn in ["normal", "hover", "pressed", "focus", "disabled"]:
+		_cam_button.add_theme_stylebox_override(sn, StyleBoxEmpty.new())
+	_cam_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_cam_button.offset_left = -166.0
+	_cam_button.offset_top = 166.0
+	_cam_button.offset_right = 0.0
+	_cam_button.offset_bottom = 332.0
+	_cam_button.pressed.connect(_on_cam_pressed)
+	add_child(_cam_button)
+	var cam_face := Panel.new()
+	cam_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var cfs := StyleBoxFlat.new()
+	cfs.bg_color = Color(0.07, 0.10, 0.16, 0.82)
+	cfs.border_color = Color(0.85, 0.92, 1.0, 0.5)
+	cfs.set_border_width_all(3)
+	cfs.set_corner_radius_all(20)
+	cam_face.add_theme_stylebox_override("panel", cfs)
+	cam_face.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	cam_face.offset_left = -94.0
+	cam_face.offset_top = 6.0
+	cam_face.offset_right = -18.0
+	cam_face.offset_bottom = 62.0
+	_cam_button.add_child(cam_face)
+	_cam_glyph = _mk_label("TOP", 24)
+	_cam_glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cam_glyph.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_cam_glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_cam_glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cam_face.add_child(_cam_glyph)
+	var rig0 := get_parent().get_node_or_null("CameraRig")
+	if rig0 != null:
+		_cam_glyph.text = CAM_MODE_NAMES[rig0.view_mode]
+	_cam_button.button_down.connect(func() -> void: cam_face.modulate = Color(0.55, 0.85, 1.7))
+	_cam_button.button_up.connect(func() -> void: cam_face.modulate = Color.WHITE)
 
 	# Anchored joystick (bottom-left): full Vector2, both axes consumed by
 	# the obby player. Disc stays near home; finger tracked anywhere.
