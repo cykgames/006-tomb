@@ -15,8 +15,15 @@ const FOLLOW_K := 5.0
 ## View modes (user request 2026-11-19): 0 = legacy overhead rig, 1..3 = low
 ## chase cam at exactly 30deg pitch, placed at the player's 6 / 5 / 7 o'clock
 ## (directly behind / behind-right / behind-left). Static so the choice
-## survives scene reloads; headless harnesses never cycle it (stay mode 0).
-static var view_mode := 0
+## survives scene reloads. Default (user request 2026-11-20): start at 6H
+## (mode 1, directly behind, 30deg pitch) on device; headless harnesses keep
+## mode 0 so test framing stays bit-identical. Static init runs once per
+## process before any _ready(), so HUD chip and rig agree on the initial mode.
+static var view_mode := _default_view_mode()
+
+
+static func _default_view_mode() -> int:
+	return 0 if DisplayServer.get_name() == "headless" else 1
 
 const CHASE_PITCH_DEG := 30.0
 const CHASE_DIST := 6.0      # horizontal distance from the player
