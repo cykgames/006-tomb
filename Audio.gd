@@ -11,12 +11,12 @@ func _ready() -> void:
 	for key in ["jump", "land", "coin", "fall", "finish", "bounce", "checkpoint"]:
 		var p := AudioStreamPlayer.new()
 		p.stream = load("res://audio/%s.wav" % key)
-		p.volume_db = -5.0
+		p.volume_db = -15.0  # user 2026-11-20: too loud; -10dB ~= half loudness
 		add_child(p)
 		_players[key] = p
 	_bgm = AudioStreamPlayer.new()
 	_bgm.stream = load("res://audio/bgm.wav")
-	_bgm.volume_db = -13.0
+	_bgm.volume_db = -23.0
 	_bgm.finished.connect(_on_bgm_finished)
 	add_child(_bgm)
 
