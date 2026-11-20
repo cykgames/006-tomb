@@ -69,6 +69,11 @@ func _ready() -> void:
 	_last_checkpoint = level.spawn_point
 	_build_visual()
 	_build_dust()
+	# Idle facing = course direction (-Z). The Kenney glTF faces +Z at yaw 0,
+	# so it needs PI at rest; the block model already faces -Z. Snap the yaw
+	# so the first frames do not show a 180deg spin.
+	_facing = PI if _gltf_mode else 0.0
+	_visual.rotation.y = _facing
 
 
 func _box(size: Vector3, color: Color, pos: Vector3) -> MeshInstance3D:
